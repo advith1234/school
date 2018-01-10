@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+  xmlns:security="http://www.springframework.org/schema/security"
+  xmlns:util="http://www.springframework.org/schema/util"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:context="http://www.springframework.org/schema/context"
+  xmlns:p="http://www.springframework.org/schema/p"
+  xmlns:tx="http://www.springframework.org/schema/tx"
+  xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+  			  http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.0.xsd	
+  			  http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd
+              http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-3.1.xsd
+              http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.0.xsd">
+    
+    <tx:jta-transaction-manager />
+
+    <tx:annotation-driven/>
+     <bean id="entityManagerFactory"
+        class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
+        <property name="jpaVendorAdapter">
+            <bean
+                class="org.springframework.orm.jpa.vendor.EclipseLinkJpaVendorAdapter">
+                <property name="showSql" value="true" />
+            </bean>
+        </property>
+        <property name="jpaDialect">
+            <bean
+                class="org.springframework.orm.jpa.vendor.EclipseLinkJpaDialect" />
+        </property>
+        <property name="persistenceUnitName" value="schooladmin"></property>
+    </bean>
+
+    <context:annotation-config/>
+	<context:component-scan base-package="com.plsoft.elearn" />
+    
+    <util:properties id="elearnProperties" location="/WEB-INF/classes/elearn.properties"/>
+    	
+    <bean id="schooladminDataSource" class="org.springframework.jndi.JndiObjectFactoryBean">
+        <property name="jndiName"><value>schooladminDataSource</value></property>
+    </bean>
+    
+    <bean id="jdbcUserService" class="com.plsoft.elearn.services.ElearnJdbcDaoImpl">
+        <property name="dataSource" ref="schooladminDataSource"/>
+        <property name="enableGroups" value="true"/>
+        <property name="enableAuthorities" value="false"/>
+    </bean>
+    
+    <security:http pattern="/elearn/**" security="none" />
+    <security:http pattern="/js/**" security="none" />
+    <security:http pattern="/images/**" security="none" />
+    <security:http pattern="/css/**" security="none" />
+    <security:http pattern="/elearnLogin/**" security="none" />
+    <security:http pattern="/login/**" security="none" />
+    
+     
+    <bean id="concurrencyFilter" class="org.springframework.security.web.session.ConcurrentSessionFilter">
+        <property name="sessionRegistry" ref="sessionRegistry" />
+        <property name="expiredUrl" value="/elearn/home"/>
+    </bean>
+    
+    <bean id="sas" class="org.springframework.security.web.authentication.session.ConcurrentSessionControlStrategy">
+       <constructor-arg name="sessionRegistry" ref="sessionRegistry" />
+       <property name="maximumSessions" value="1" /> 
+       
+    </bean>
+    
+    <bean id="sessionRegistry" class="org.springframework.security.core.session.SessionRegistryImpl" />
+
+    <security:global-method-security secured-annotations="enabled" jsr250-annotations="enabled"/> 
+    
+    <bean id="authFailureHandler" class="org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler">
+        <property name="defaultFailureUrl" value="/elearn/loginfail"/>  
+    </bean>
+    
+    <bean id="spnegoEntryPoint"
+                    class="com.plsoft.elearn.util.SpnegoEntryPoint" />
+
+    <bean id="spnegoAuthenticationProcessingFilter" class="org.springframework.security.extensions.kerberos.web.SpnegoAuthenticationProcessingFilter">
+      <property name="authenticationManager" ref="authenticationManager" />
+    </bean>
+    
+    <bean id="customDetailsService" class="com.plsoft.elearn.util.KerbUserDetailsService"/>
+    
+    <security:http entry-point-ref="spnegoEntryPoint">
+    <security:intercept-url pattern="/user/**" access="ROLE_USER" />
+    <security:intercept-url pattern="/modules/**" access="ROLE_USER" />
+    <!-- <security:intercept-url pattern="/admin/**" access="ROLE_ADMIN" />-->
+      
+      <security:custom-filter position="CONCURRENT_SESSION_FILTER" ref="concurrencyFilter" />
+      <security:custom-filter ref="customAuthFilter" position="FORM_LOGIN_FILTER"/>
+      <security:custom-filter ref="spnegoAuthenticationProcessingFilter" position="BASIC_AUTH_FILTER" />
+      
+      <security:session-management session-authentication-strategy-ref="sas">
+      </security:session-management>
+      <security:logout logout-success-url="/elearn/home"/>
+    </security:http>
+    
+    
+    <bean id="authSuccessHandler" class="org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler">
+        <property name="defaultTargetUrl" value="/elearnLogin/login"/>
+        <property name="alwaysUseDefaultTargetUrl" value="true"/>
+    </bean>
+    
+    <bean id="customAuthFilter" class="com.plsoft.elearn.services.AuthenticationFilter">
+        <property name="authenticationFailureHandler" ref="authFailureHandler"/>
+        <property name="authenticationSuccessHandler" ref="authSuccessHandler"/>
+        <property name="authenticationManager" ref="authenticationManager"/>
+        <property name="sessionAuthenticationStrategy" ref="sas" />
+    </bean>
+    
+   <!-- <bean id="kerberosServiceAuthenticationProvider" class="org.springframework.security.extensions.kerberos.KerberosServiceAuthenticationProvider">
+      <property name="ticketValidator">
+        <bean class="org.springframework.security.extensions.kerberos.SunJaasKerberosTicketValidator">
+          <property name="servicePrincipal" value="HTTP/localhost@WIN.CODEPUPPET.ORG" />
+          <property name="keyTabLocation" value="WEB-INF/spn.keytab" />
+          <property name="debug" value="true"/>
+        </bean>
+      </property>
+      <property name="userDetailsService" ref="customDetailsService" />
+    </bean>  --> 
+
+    
+    <security:authentication-manager alias="authenticationManager">
+        <!-- <security:authentication-provider ref="kerberosServiceAuthenticationProvider" /> -->
+        <security:authentication-provider user-service-ref="jdbcUserService">
+          <security:password-encoder hash="sha">
+            <!-- <security:salt-source user-property="username"/> -->
+          </security:password-encoder>
+        </security:authentication-provider>
+    </security:authentication-manager>
+  
+ 
+</beans>

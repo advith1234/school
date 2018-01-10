@@ -1,0 +1,327 @@
+<?xml version = '1.0' encoding = 'windows-1252'?>
+
+<project name="schooladmin" default="compile" basedir="." xmlns:ivy="antlib:org.apache.ivy.ant">
+
+	<!--Set the output directories-->
+	<property environment="env" />
+	<property file="build.properties" />
+	<property name="webapp.name" value="schooladmin" />
+	<property name="src.dir" value="src/main/java" />
+	<property name="src.resources.dir" value="src/main/resources" />
+	<property name="test.src.dir" value="src/test/java" />
+	<property name="test.resources.dir" value="src/test/resources" />
+	<property name="web.dir" value="src/main/webapp" />
+	<property name="build.dir" value="antbuild" />
+	<property name="compile.outdir" value="${build.dir}/classes" />
+	<property name="reports.test" value="${build.dir}/test" />
+	<property name="coverage.dir" value="${build.dir}/coverage" />
+	<property name="inst.dir" value="${build.dir}/instrument" />
+	<property name="findbugs.loc" value="/TeamCity/FindBugs" />
+	<property name="ivy.install.version" value="2.0.0" />
+	<property name="ivy.jar.dir" value="${basedir}/ivy" />
+	<property name="ivy.jar.file" value="${ivy.jar.dir}/ivy.jar" />
+	<property name="webinf.lib" value="${web.dir}/WEB-INF/lib" />
+	<property name="test.lib" value="externalLibs" />
+	<property name="source.lib" value="sourceLibs" />
+	<property name="locallibs" value="localLibs" />
+
+	<target name="setclasspath">
+		<!--Set the classpath-->
+		<path id="classpath">
+			<pathelement location="${compile.outdir}" />
+
+			<fileset dir="${test.lib}">
+				<include name="*.jar" />
+			</fileset>
+
+			<fileset dir="${webinf.lib}">
+				<include name="*.jar" />
+			</fileset>
+		</path>
+	</target>
+
+	<target name="init">
+		<tstamp>
+			<format property="touch.time" pattern="MMddyyyyhhmmssSS" />
+		</tstamp>
+	</target>
+	<!-- <target name="compile" depends="init,resolve,setclasspath"> -->
+	<target name="compile" depends="init,setclasspath">
+			
+			
+			<mkdir dir="${compile.outdir}" />
+			<!-- weblogic 11g jars up the classes dir, which convention plugin does not like, add META-INF so it's recognized -->
+			<mkdir dir="${compile.outdir}/META-INF" />
+
+			<!-- copy the message properties file -->
+			<copy todir="${compile.outdir}" overwrite="true">
+				<fileset dir="${src.resources.dir}">
+					<include name="**/*.properties" />
+					<include name="**/*.xml" />
+				</fileset>
+			</copy>
+
+			<!--Compile Java source files-->
+			<javac destdir="${compile.outdir}" debug="on" listfiles="true" source="1.5">
+				<src path="${src.dir}" />
+				<classpath refid="classpath" />
+				<include name="**/*.java" />
+			</javac>
+		</target>
+
+	<target name="compile.test" depends="compile">
+		<mkdir dir="${compile.outdir}" />
+
+		<!--Compile Java source files-->
+		<javac destdir="${compile.outdir}" debug="on" listfiles="true">
+			<src path="${test.src.dir}" />
+			<classpath refid="classpath" />
+			<include name="**/*.java" />
+		</javac>
+
+		<copy todir="${compile.outdir}" overwrite="true">
+			<fileset dir="${test.resources.dir}">
+				<include name="**/*.txt" />
+				<include name="**/*.xml" />
+				<include name="**/*.properties" />
+			</fileset>
+		</copy>
+	</target>
+
+	<target name="clean">
+		<delete dir="${compile.outdir}" />
+		<delete dir="${build.dir}" />
+	</target>
+
+	<target name="build" depends="compile" />
+
+	<target name="rebuild" depends="clean,build" />
+
+	<target name="all" depends="build" />
+
+	<target name="minify" depends="concatenate">
+		<echo message="WARNING - 'minify' target is commented-out" />
+	</target>
+
+	<target name="concatenate" description="Concatenate all js files">
+		<echo message="WARNING - 'concatenate' target is commented-out" />
+	</target>
+	
+	<target name="update-package">
+        <copy todir="${build.dir}/schooladmin" overwrite="true">
+            <fileset dir="${web.dir}" />
+        </copy>
+    </target>
+	
+	<target name="package" depends="build">
+		<delete dir="${build.dir}/schooladmin" />
+        <mkdir dir="${build.dir}/schooladmin" />
+        <copy todir="${build.dir}/schooladmin" overwrite="true">
+            <fileset dir="${web.dir}" />
+        </copy>
+	    
+		<copy todir="${build.dir}/schooladmin/WEB-INF/classes" overwrite="true">
+            <fileset dir="${compile.outdir}" />
+        </copy>
+    </target>
+	
+	<target name="war" depends="build">
+		<mkdir dir="${build.dir}/WebContent" />
+		<copy todir="${build.dir}/WebContent" overwrite="true">
+			<fileset dir="${web.dir}" />
+		</copy>
+
+		<antcall target="minify" />
+		<war destfile="${build.dir}/${webapp.name}.war" webxml="${build.dir}/WebContent/WEB-INF/web.xml">
+			<fileset dir="${build.dir}/WebContent" />
+			<classes dir="${compile.outdir}" />
+		</war>
+	</target>
+	
+	<target name="explodeWar" depends="war">
+		<unzip src="${build.dir}/${webapp.name}.war" dest="${build.dir}/${webapp.name}"/>
+	</target>
+
+	<path id="emma.lib">
+		<pathelement location="externalLibs/emma-2.0.5312.jar" />
+		<pathelement location="externalLibs/emma_ant-2.0.5312.jar" />
+	</path>
+
+	<taskdef resource="emma_ant.properties" classpathref="emma.lib" />
+
+	<target name="instrument" depends="compile" description="offline instrumentation">
+		<path id="emma.lib">
+			<pathelement location="externalLibs/emma-2.0.5312.jar" />
+			<pathelement location="externalLibs/emma_ant-2.0.5312.jar" />
+		</path>
+
+		<taskdef resource="emma_ant.properties" classpathref="emma.lib" />
+
+		<path id="run.classpath">
+			<pathelement location="${compile.outdir}" />
+		</path>
+		<emma enabled="true">
+			<instr instrpathref="run.classpath" destdir="${inst.dir}" metadatafile="${coverage.dir}/metadata.emma" merge="true" />
+		</emma>
+	</target>
+
+	<target name="test" depends="compile.test,instrument">
+		<mkdir dir="${reports.test}" />
+		<junit>
+			<classpath>
+				<pathelement location="${inst.dir}" />
+				<pathelement location="${compile.outdir}" />
+				<pathelement location="test" />
+				<fileset dir="externalLibs">
+					<include name="*.jar" />
+				</fileset>
+
+				<fileset dir="WebContent/WEB-INF/lib">
+					<include name="*.jar" />
+				</fileset>
+			</classpath>
+			<formatter type="xml" />
+			<batchtest fork="yes" todir="${reports.test}">
+				<fileset dir="${test.src.dir}">
+					<include name="**/*.java" />
+					<exclude name="**/Abstract*.java" />
+					<exclude name="**/integration/*.java" />
+					<exclude name="**/integration/manual/*.java" />
+				</fileset>
+			</batchtest>
+			<jvmarg value="-Demma.coverage.out.file=${coverage.dir}/coverage.emma" />
+			<jvmarg value="-Demma.coverage.out.merge=false" />
+			<jvmarg value="-Xmx512M" />
+		</junit>
+		<junitreport todir="${reports.test}">
+			<fileset dir="${reports.test}">
+				<include name="TEST-*.xml" />
+			</fileset>
+			<report todir="${reports.test}" />
+		</junitreport>
+	</target>
+
+	<target name="report" depends="test" description="create the Emma report">
+		<emma enabled="true">
+			<report sourcepath="${src.dir}">
+				<fileset dir="${coverage.dir}">
+					<include name="*.emma" />
+				</fileset>
+				<html outfile="${coverage.dir}/coverage.html" depth="method" columns="name,class,method,block,line" />
+			</report>
+		</emma>
+	</target>
+
+	<target name="findbugs" depends="compile">
+		<fail message="must have findbugs installed in ${findbugs.loc}">
+			<condition>
+				<not>
+					<length file="${findbugs.loc}/lib/findbugs.jar" when="greater" length="0" />
+				</not>
+			</condition>
+		</fail>
+		<path id="findbugs.lib">
+			<pathelement location="externalLibs/findbugs-ant-1.3.2.jar" />
+		</path>
+
+		<path id="auxClasspath">
+			<fileset dir="externalLibs">
+				<include name="*.jar" />
+			</fileset>
+
+			<fileset dir="WebContent/WEB-INF/lib">
+				<include name="*.jar" />
+			</fileset>
+
+		</path>
+
+		<taskdef name="findbugs" classname="edu.umd.cs.findbugs.anttask.FindBugsTask" classpathref="findbugs.lib" />
+		<mkdir dir="${coverage.dir}" />
+		<findbugs home="${findbugs.loc}" output="html" outputFile="${coverage.dir}/findbugs.html" jvmargs="-Xmx256M">
+			<sourcePath path="${src.dir}" />
+			<auxClasspath refid="classpath" />
+			<class location="${compile.outdir}" />
+		</findbugs>
+	</target>
+
+	<target name="zipartifacts" depends="report, findbugs">
+		<zip basedir="${coverage.dir}" destfile="${build.dir}/coverage.zip" />
+	</target>
+
+	<target name="download-ivy" unless="skip.download">
+		<mkdir dir="${ivy.jar.dir}" />
+		<echo message="installing ivy..." />
+		<get src="http://repo1.maven.org/maven2/org/apache/ivy/ivy/${ivy.install.version}/ivy-${ivy.install.version}.jar" dest="${ivy.jar.file}" usetimestamp="true" />
+	</target>
+
+	<target name="install-ivy" depends="download-ivy" description="--> install ivy">
+		<path id="ivy.lib.path">
+			<fileset dir="${ivy.jar.dir}" includes="*.jar" />
+		</path>
+		<taskdef resource="org/apache/ivy/ant/antlib.xml" uri="antlib:org.apache.ivy.ant" classpathref="ivy.lib.path" />
+	</target>
+
+	<target name="resolve" depends="install-ivy" description="--> retrieve dependencies with ivy" unless="resolved">
+		<path id="ivy.lib.path">
+			<fileset dir="${ivy.jar.dir}" includes="*.jar" />
+		</path>
+		<taskdef resource="org/apache/ivy/ant/antlib.xml" uri="antlib:org.apache.ivy.ant" classpathref="ivy.lib.path" />
+		<ivy:settings />
+		<mkdir dir="${webinf.lib}" />
+		<mkdir dir="${test.lib}" />
+		<mkdir dir="${source.lib}" />
+		<ivy:retrieve pattern="${webinf.lib}/[artifact]-[revision](-[classifier]).[ext]" conf="runtime" sync="true" />
+		<ivy:retrieve pattern="${test.lib}/[artifact]-[revision](-[classifier]).[ext]" conf="test" sync="true" />
+		<ivy:retrieve pattern="${source.lib}/[artifact]-[revision](-[classifier])-[type].[ext]" conf="sources" haltonfailure="false" sync="true" />
+		<!-- copying the jdbc driver manually, since ORACLE won't publish it in mvn, and I don't want to create a local repository to manage -->
+		<copy file="${locallibs}/javax.persistence_1.0.0.jar" todir="${test.lib}" />
+		<copy file="${locallibs}/javax.transaction_1.0.0.0_1-1.jar" todir="${test.lib}" />
+		<copy file="${locallibs}/ojdbc14.jar" todir="${test.lib}" />
+		<property name="resolved" value="true" />
+	</target>
+
+	<target name="ivyclean">
+		<path id="ivy.lib.path">
+			<fileset dir="${ivy.jar.dir}" includes="*.jar" />
+		</path>
+		<taskdef resource="org/apache/ivy/ant/antlib.xml" uri="antlib:org.apache.ivy.ant" classpathref="ivy.lib.path" />
+		<ivy:cleancache />
+		<delete dir="${webinf.lib}" />
+		<delete dir="${source.lib}" />
+	</target>
+
+	<target name="integration-test" depends="compile.test,instrument">
+		<mkdir dir="${reports.test}" />
+		<junit>
+			<classpath>
+				<pathelement location="${inst.dir}" />
+				<pathelement location="${compile.outdir}" />
+				<pathelement location="test" />
+				<fileset dir="externalLibs">
+					<include name="*.jar" />
+				</fileset>
+				<fileset dir="WebContent/WEB-INF/lib">
+					<include name="*.jar" />
+				</fileset>
+			</classpath>
+			<formatter type="xml" />
+			<batchtest fork="yes" todir="${reports.test}">
+				<fileset dir="${test.src.dir}">
+					<include name="**/integration/*.java" />
+					<exclude name="**/Abstract*.java" />
+					<exclude name="**/integration/manual/*.java" />
+				</fileset>
+			</batchtest>
+			<jvmarg value="-Demma.coverage.out.file=${coverage.dir}/coverage.emma" />
+			<jvmarg value="-Demma.coverage.out.merge=false" />
+			<jvmarg value="-Xmx512M" />
+		</junit>
+		<junitreport todir="${reports.test}">
+			<fileset dir="${reports.test}">
+				<include name="TEST-*.xml" />
+			</fileset>
+			<report todir="${reports.test}" />
+		</junitreport>
+	</target>
+
+</project>

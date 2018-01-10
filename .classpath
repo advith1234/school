@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src/main/java"/>
+	<classpathentry kind="con" path="org.eclipse.jst.j2ee.internal.web.container"/>
+	<classpathentry kind="con" path="org.eclipse.jst.j2ee.internal.module.container"/>
+	<classpathentry kind="lib" path="localLibs/javax.persistence_1.0.0.jar"/>
+	<classpathentry kind="lib" path="localLibs/javax.transaction_1.0.0.0_1-1.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="D:/Eclipse/TEST4U/src/main/webapp/WEB-INF/lib/servlet-api-2.3.jar"/>
+	<classpathentry kind="output" path="build/classes"/>
+</classpath>

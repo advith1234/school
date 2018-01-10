@@ -1,0 +1,6 @@
+This project uses Apache Ivy to pull down dependencies.  To setup the project in Eclipse for local development (not production), do the following:
+
+1. Checkout from SVN, use New Project wizards, choose Dynamic Web Project, use tomcat 6, give it a name, and click Finish
+2. Run the resolve target of the ant build (right click build.xml, Run As, ant build, choose resolve target)
+3. Refresh the project to get the updated directories (you'll have new jars in the externalLibs folder, a new sourceLibs folder, and WebContent\WEB-INF\lib)
+5. Startup the tomcat server

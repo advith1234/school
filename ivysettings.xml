@@ -1,0 +1,64 @@
+<ivysettings>
+	<property name="ivy.checksums" value="" override="true" />
+	<caches
+		artifactPattern="[organisation]/[module]/[type]s/[artifact]-[revision](-[classifier]).[ext]"
+		checkUpToDate="true" />
+	<settings defaultResolver="libraries" />
+	<include url="${ivy.default.settings.dir}/ivysettings-public.xml" />
+	<include url="${ivy.default.settings.dir}/ivysettings-shared.xml" />
+	<include url="${ivy.default.settings.dir}/ivysettings-local.xml" />
+	<include url="${ivy.default.settings.dir}/ivysettings-main-chain.xml" />
+	<include url="${ivy.default.settings.dir}/ivysettings-default-chain.xml" />
+	<resolvers>
+		<chain name="libraries">
+			<url name="jbossm2">
+				<artifact
+					pattern="http://repository.jboss.com/maven2/javax/[organization]/[module]/[revision]/[module]-[revision].jar" />
+			</url>
+			<filesystem name="local">
+				<ivy pattern="${ivy.cache.dir}/[module]/ivy-[revision].xml" />
+				<artifact
+					pattern="${ivy.cache.dir}/[module]/[artifact]-[revision](-[classifier]).[ext]" />
+			</filesystem>
+			<resolver ref="main" />
+			<ibiblio name="repo1.maven.org" m2compatible="true" usepoms="true"
+				useMavenMetadata="true"
+				pattern="[organisation]/[module]/[revision]/[artifact]-[revision](-[classifier]).[ext]" />
+			<ibiblio name="java.net.m1" root="http://download.java.net/maven/1/"
+				m2compatible="false" usepoms="true" useMavenMetadata="true"
+				pattern="[organization]/[type]s/[module]-[revision](-[classifier]).[ext]" />
+			<ibiblio name="java.net.m2" root="http://download.java.net/maven/2/"
+				m2compatible="true" usepoms="true" useMavenMetadata="true"
+				pattern="[organisation]/[module]/[revision]/[artifact]-[revision](-[classifier]).[ext]" />
+			<ibiblio name="codehaus" m2compatible="true"
+				root="http://repository.codehaus.org/" usepoms="true"
+				useMavenMetadata="true"
+				pattern="[organisation]/[module]/[revision]/[artifact]-[revision](-[classifier]).[ext]" />
+			<ibiblio name="jboss" m2compatible="true"
+				root="http://repository.jboss.org/maven2/" usepoms="true"
+				useMavenMetadata="true"
+				pattern="[organisation]/[module]/[revision]/[artifact]-[revision](-[classifier]).[ext]" />
+			<ibiblio name="spring-release" m2compatible="true"
+				root="http://repository.springsource.com/maven/bundles/release"
+				usepoms="true" useMavenMetadata="true"
+				pattern="[organisation]/[module]/[revision]/[artifact]-[revision](-[classifier]).[ext]" />
+			<ibiblio name="spring-external" m2compatible="true"
+				root="http://repository.springsource.com/maven/bundles/external"
+				usepoms="true" useMavenMetadata="true"
+				pattern="[organisation]/[module]/[revision]/[artifact]-[revision](-[classifier]).[ext]" />
+			<ibiblio name="spring-milestone" m2compatible="true"
+				root="http://repository.springsource.com/maven/bundles/milestone"
+				usepoms="true" useMavenMetadata="true"
+				pattern="[organisation]/[module]/[revision]/[artifact]-[revision](-[classifier]).[ext]" />
+			<ibiblio name="maven.springframework.org" m2compatible="true"
+				root="http://maven.springframework.org/milestone"
+				usepoms="true" useMavenMetadata="true"
+				pattern="[organisation]/[module]/[revision]/[artifact]-[revision](-[classifier]).[ext]" />	
+			<ibiblio name="eclipse" m2compatible="true"
+				root="http://www.eclipse.org/downloads/download.php?r=1&amp;nf=1&amp;file=/rt/eclipselink/maven.repo"
+				usepoms="true" useMavenMetadata="true"
+				pattern="[organisation]/[module]/[revision]/[artifact]-[revision](-[classifier]).[ext]" />
+		</chain>
+
+	</resolvers>
+</ivysettings>
